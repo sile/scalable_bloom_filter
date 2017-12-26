@@ -47,7 +47,10 @@ impl<T: Hash + ?Sized, H: NthHash> ScalableBloomFilter<T, H> {
     fn grow(&mut self) {
         let filter = {
             let last = self.filters.last().expect("Never fails");
+
+            // TODO: last.slice_size() * GROWTH_FACTOR * last.slices()
             let next_bits = last.bits() * GROWTH_FACTOR;
+
             let next_slices = last.slices() + 1;
             BloomFilter::new(next_bits, next_slices)
         };

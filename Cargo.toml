@@ -1,0 +1,7 @@
+[package]
+name = "scalable_bloom_filter"
+version = "0.1.0"
+authors = ["Takeru Ohta <phjgt308@gmail.com>"]
+
+[dependencies]
+siphasher = "0.2"

@@ -1,7 +1,12 @@
 scalable_bloom_filter
 ======================
 
-References
-----------
+[![scalable_bloom_filter](http://meritbadge.herokuapp.com/scalable_bloom_filter)](https://crates.io/crates/scalable_bloom_filter)
+[![Documentation](https://docs.rs/scalable_bloom_filter/badge.svg)](https://docs.rs/scalable_bloom_filter)
+[![Build Status](https://travis-ci.org/sile/scalable_bloom_filter.svg?branch=master)](https://travis-ci.org/sile/scalable_bloom_filter)
+[![Code Coverage](https://codecov.io/gh/sile/scalable_bloom_filter/branch/master/graph/badge.svg)](https://codecov.io/gh/sile/scalable_bloom_filter/branch/master)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-- [Scalable Bloom Filsters](http://haslab.uminho.pt/cbm/files/dbloom.pdf)
+A Rust implementation of [Scalable Bloom Filters][sbf].
+
+[sbf]: http://haslab.uminho.pt/cbm/files/dbloom.pdf

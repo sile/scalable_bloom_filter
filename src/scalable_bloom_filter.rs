@@ -5,9 +5,7 @@ use hash::{DefaultHasher, NthHash};
 // parameter `s`
 const GROWTH_FACTOR: usize = 2;
 
-// parameter `r`
-const FILL_RATIO_LIMIT: f64 = 0.5;
-
+// r=0.5
 #[derive(Debug)]
 pub struct ScalableBloomFilter<T: ?Sized, H = DefaultHasher> {
     hasher: H,
@@ -24,37 +22,52 @@ impl<T: Hash + ?Sized, H: NthHash> ScalableBloomFilter<T, H> {
         let initial_bits =
             error_probability.ln().abs() * (initial_capacity as f64) / 2.0f64.ln().powi(2);
         let slice_count = (1.0 / error_probability).log2().ceil() as usize;
-        let filter = BloomFilter::new(initial_bits.ceil() as usize, slice_count);
+        let filter = BloomFilter::new(initial_bits.ceil() as usize / slice_count, slice_count);
         ScalableBloomFilter {
             filters: vec![filter],
             hasher,
         }
     }
+
     pub fn insert(&mut self, value: &T) {
-        let fill_ratio = {
+        {
             let last = self.filters.last_mut().expect("Never fails");
             last.insert(value, &self.hasher);
-            last.fill_ratio()
-        };
-        if fill_ratio >= FILL_RATIO_LIMIT {
+        }
+        if self.is_growth_needed() {
             self.grow();
         }
     }
+
     pub fn contains(&self, value: &T) -> bool {
         self.filters.iter().any(|f| f.contains(value, &self.hasher))
+    }
+
+    pub fn allocated_bits(&self) -> usize {
+        self.filters.iter().map(|f| f.bits().number_of_bits()).sum()
+    }
+
+    pub fn used_bits(&self) -> usize {
+        self.filters
+            .iter()
+            .map(|f| f.bits().number_of_one_bits())
+            .sum()
     }
 
     fn grow(&mut self) {
         let filter = {
             let last = self.filters.last().expect("Never fails");
-
-            // TODO: last.slice_size() * GROWTH_FACTOR * last.slices()
-            let next_bits = last.bits() * GROWTH_FACTOR;
-
-            let next_slices = last.slices() + 1;
-            BloomFilter::new(next_bits, next_slices)
+            let next_slice_bitwidth = last.slice_bitwidth() * GROWTH_FACTOR;
+            let next_number_of_slices = last.number_of_slices() + 1;
+            BloomFilter::new(next_slice_bitwidth, next_number_of_slices)
         };
         self.filters.push(filter);
+    }
+
+    fn is_growth_needed(&self) -> bool {
+        let bits = self.filters.last().expect("Never fails").bits();
+        debug_assert_ne!(bits.number_of_one_bits(), 0);
+        bits.number_of_bits() / bits.number_of_one_bits() < 2
     }
 }
 
@@ -63,9 +76,33 @@ mod test {
     use super::*;
 
     #[test]
-    fn it_works() {
-        let mut filter = ScalableBloomFilter::new(1000, 0.001);
-        filter.insert("foo");
-        assert!(filter.contains("foo"));
+    fn new_works() {
+        let filter = ScalableBloomFilter::<(), _>::new(18232, 0.001);
+        assert_eq!(filter.used_bits(), 0);
+        assert_eq!(filter.allocated_bits(), 262144);
+    }
+
+    #[test]
+    fn insert_and_contains_works() {
+        let mut filter = ScalableBloomFilter::new(3, 0.01);
+        for x in &["foo", "bar", "baz"] {
+            assert!(!filter.contains(x));
+            filter.insert(x);
+            assert!(filter.contains(x));
+        }
+    }
+
+    #[test]
+    fn growth_works() {
+        let mut filter = ScalableBloomFilter::new(32, 0.000001);
+        let initial_bits = filter.allocated_bits();
+
+        for i in 0..10000 {
+            assert!(!filter.contains(&i));
+            filter.insert(&i);
+            assert!(filter.contains(&i));
+        }
+        assert!((0..10000).all(|i| filter.contains(&i)));
+        assert_ne!(filter.allocated_bits(), initial_bits);
     }
 }

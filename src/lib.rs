@@ -8,7 +8,7 @@
 //! ```
 //! use scalable_bloom_filter::ScalableBloomFilter;
 //!
-//! let mut flter = ScalableBloomFilter::new(1000, 0.001);
+//! let mut filter = ScalableBloomFilter::new(1000, 0.001);
 //! filter.insert("foo");
 //! assert!(filter.contains("foo"));
 //! ```

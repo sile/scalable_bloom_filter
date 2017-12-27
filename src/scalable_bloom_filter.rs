@@ -5,18 +5,38 @@ use hash::{DefaultHasher, NthHash};
 // parameter `s`
 const GROWTH_FACTOR: usize = 2;
 
-// r=0.5
+/// Scalable bloom filter.
+///
+/// See the [paper] about scalable bloom filters.
+///
+/// [paper]: http://haslab.uminho.pt/cbm/files/dbloom.pdf
+///
+/// # Note
+///
+/// For simplicity, this implementation uses static parameters as follows:
+///
+/// - growth factor: `s = 2`
+/// - tightening ratio: `r = 0.5`
 #[derive(Debug)]
 pub struct ScalableBloomFilter<T: ?Sized, H = DefaultHasher> {
     hasher: H,
     filters: Vec<BloomFilter<T>>,
 }
 impl<T: Hash + ?Sized> ScalableBloomFilter<T, DefaultHasher> {
+    /// Makes a new `ScalableBloomFilter` instance.
+    ///
+    /// `initial_capacity` is the expected number of elements in ordinaly cases.
+    /// `error_probability` is the maximum allowable probability of false positives.
+    ///
+    /// # Panics
+    ///
+    /// `error_probability` must be a value greater than `0.0` and smaller than or equal to `1.0`.
     pub fn new(initial_capacity: usize, error_probability: f64) -> Self {
         Self::with_hasher(initial_capacity, error_probability, DefaultHasher)
     }
 }
 impl<T: Hash + ?Sized, H: NthHash> ScalableBloomFilter<T, H> {
+    /// Makes a new `ScalableBloomFilter` with the given hasher.
     pub fn with_hasher(initial_capacity: usize, error_probability: f64, hasher: H) -> Self {
         assert!(0.0 < error_probability && error_probability <= 1.0);
         let initial_bits =
@@ -29,24 +49,34 @@ impl<T: Hash + ?Sized, H: NthHash> ScalableBloomFilter<T, H> {
         }
     }
 
-    pub fn insert(&mut self, value: &T) {
+    /// Inserts a element to the filter.
+    pub fn insert(&mut self, element: &T) {
         {
             let last = self.filters.last_mut().expect("Never fails");
-            last.insert(value, &self.hasher);
+            last.insert(element, &self.hasher);
         }
         if self.is_growth_needed() {
             self.grow();
         }
     }
 
-    pub fn contains(&self, value: &T) -> bool {
-        self.filters.iter().any(|f| f.contains(value, &self.hasher))
+    /// Queries whether there is possibility that the element is contains in the filter.
+    pub fn contains(&self, element: &T) -> bool {
+        self.filters
+            .iter()
+            .any(|f| f.contains(element, &self.hasher))
     }
 
+    /// The number of bits allocated by the filter.
+    ///
+    /// As the filter grows, this value will also increase.
     pub fn allocated_bits(&self) -> usize {
         self.filters.iter().map(|f| f.bits().number_of_bits()).sum()
     }
 
+    /// The number of bits used by the filter for storing elements.
+    ///
+    /// This is the number of one bits in the allocated bits.
     pub fn used_bits(&self) -> usize {
         self.filters
             .iter()

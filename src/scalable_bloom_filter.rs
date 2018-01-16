@@ -51,9 +51,15 @@ impl<T: Hash + ?Sized, H: NthHash> ScalableBloomFilter<T, H> {
 
     /// Inserts a element to the filter.
     pub fn insert(&mut self, element: &T) {
-        {
-            let last = self.filters.last_mut().expect("Never fails");
-            last.insert(element, &self.hasher);
+        let last = self.filters.len();
+        for (i, filter) in self.filters.iter_mut().enumerate() {
+            if i + 1 == last {
+                filter.insert(element, &self.hasher);
+            } else {
+                if filter.contains(element, &self.hasher) {
+                    return;
+                }
+            }
         }
         if self.is_growth_needed() {
             self.grow();

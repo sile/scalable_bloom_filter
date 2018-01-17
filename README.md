@@ -1,3 +1,4 @@
+
 scalable_bloom_filter
 ======================
 
@@ -10,3 +11,10 @@ scalable_bloom_filter
 A Rust implementation of [Scalable Bloom Filters][sbf].
 
 [sbf]: http://haslab.uminho.pt/cbm/files/dbloom.pdf
+
+TODO
+-----
+
+- Reduce the number of hash function invocations:
+   > A standard technique from the hashing literature is to use two hash functions `h1(x)` and `h2(x)` to simulate additional hash functions of the form `gi(x) = h1(x)+ih2(x)` ([Less Hashing, Same Performance: Building a Better Bloom Filter
+](https://www.eecs.harvard.edu/~michaelm/postscripts/rsa2008.pdf))

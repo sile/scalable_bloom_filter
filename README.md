@@ -1,4 +1,3 @@
-
 scalable_bloom_filter
 ======================
 
